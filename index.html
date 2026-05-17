@@ -109,6 +109,23 @@
     50% { opacity: 0.5; transform: scale(1.05); }
   }
   .hidden { display: none !important; }
+  .ready-hint {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #C13534;
+    color: white;
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 16px;
+    border: 3px solid #ffffff;
+    box-shadow: 0 3px 0 #2C438F, 0 0 20px rgba(0,0,0,0.4);
+    animation: pulse 1.2s ease-in-out infinite;
+    pointer-events: none;
+    white-space: nowrap;
+  }
   .wish-form {
     display: flex;
     flex-direction: column;
@@ -175,8 +192,9 @@
       <p>Timon zit op de WC in de superheldenschool!</p>
       <p>Help hem ontsnappen door het doolhof naar <b>Stobbe</b> ❤️ — pas op voor de 3 leerkrachten: <b>Rikkie</b>, <b>Debbie</b> en <b>Frans</b>!</p>
       <p>🧻 Bonus: pak WC-rollen op moeilijke plekken voor extra punten.</p>
-      <p class="hint">Druk op SPATIE om te starten</p>
+      <p class="hint">Druk op SPATIE om de game te zien</p>
     </div>
+    <div id="readyHint" class="ready-hint hidden">⌨️ Druk nog een keer op SPATIE om te beginnen</div>
   </div>
   <div class="controls">Pijltjestoetsen of WASD om te bewegen • SPATIE om te starten / opnieuw</div>
   <div class="credit">Operatie Toilet — boekbespreking game</div>
@@ -246,7 +264,7 @@
     [7, 13],  [12, 13], // recht voor de deuren van de lerarenkamer
   ];
 
-  const STATE = { START: 0, PLAYING: 1, WISHING: 2, WON: 3, LOST: 4 };
+  const STATE = { START: 0, READY: 1, PLAYING: 2, WISHING: 3, WON: 4, LOST: 5 };
   let state = STATE.START;
   let lastWish = "";
 
@@ -489,6 +507,14 @@
     document.getElementById("overlay").classList.add("hidden");
   }
 
+  function showReadyHint() {
+    document.getElementById("readyHint").classList.remove("hidden");
+  }
+
+  function hideReadyHint() {
+    document.getElementById("readyHint").classList.add("hidden");
+  }
+
   // === Input ===
   document.addEventListener("keydown", (e) => {
     // Tijdens het wensen: typen in input niet onderbreken
@@ -496,11 +522,25 @@
 
     const key = e.key;
     if (key === " " || e.code === "Space") {
-      if (state === STATE.START || state === STATE.WON || state === STATE.LOST) {
+      if (state === STATE.START) {
+        // Eerste keer spatie: laat de game zien (klaar voor uitleg in de klas)
         e.preventDefault();
         initLevel();
-        state = STATE.PLAYING;
+        state = STATE.READY;
         hideOverlay();
+        showReadyHint();
+      } else if (state === STATE.READY) {
+        // Tweede keer spatie: nu begint het spel echt
+        e.preventDefault();
+        state = STATE.PLAYING;
+        hideReadyHint();
+      } else if (state === STATE.WON || state === STATE.LOST) {
+        // Herstart na win/verlies: gaat direct via READY zodat je opnieuw kan uitleggen
+        e.preventDefault();
+        initLevel();
+        state = STATE.READY;
+        hideOverlay();
+        showReadyHint();
       }
       return;
     }
